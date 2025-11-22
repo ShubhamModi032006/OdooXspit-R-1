@@ -6,7 +6,6 @@ const userSchema = new mongoose.Schema(
     email: { type: String, required: true, unique: true, lowercase: true },
     password: { type: String, required: true },
     role: { type: String, enum: ["manager", "staff"], default: "staff" },
-    emailVerified: { type: Boolean, default: false },
 
     assignedWarehouse: {
       type: mongoose.Schema.Types.ObjectId,
@@ -15,9 +14,7 @@ const userSchema = new mongoose.Schema(
     },
 
     otp: String,
-    otpExpiry: Date,
-    signupOtp: String, // OTP for email verification during signup
-    signupOtpExpiry: Date
+    otpExpiry: Date
   },
   { timestamps: true }
 );
