@@ -1,7 +1,7 @@
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const User = require("../models/user.model");
-const { sendOtpEmail } = require("../utils/sendOtp");
+const { sendOtpEmail, sendStaffSignupNotification } = require("../utils/sendOtp");
 
 const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || "3h";
 
@@ -25,7 +25,36 @@ exports.signup = async (req, res) => {
     const salt = await bcrypt.genSalt(10);
     const hashed = await bcrypt.hash(password, salt);
 
-    const user = await User.create({ username, email, password: hashed, role: role || "staff" });
+    const userRole = role || "staff";
+    const user = await User.create({ username, email, password: hashed, role: userRole });
+
+    // If staff signs up, send email notification to all managers
+    if (userRole === "staff") {
+      try {
+        // Get all managers
+        const managers = await User.find({ role: "manager" });
+        
+        if (managers.length > 0) {
+          const { subject, text } = sendStaffSignupNotification({ username, email });
+
+          // Send email to each manager individually
+          const emailPromises = managers.map(manager => 
+            sendOtpEmail(manager.email, subject, text).catch(err => {
+              console.error(`Failed to send email to manager ${manager.email}:`, err);
+              return null; // Continue sending to other managers even if one fails
+            })
+          );
+          
+          await Promise.all(emailPromises);
+          console.log(`Staff signup notification sent to ${managers.length} manager(s)`);
+        } else {
+          console.log("No managers found to notify about staff signup");
+        }
+      } catch (emailError) {
+        // Log email error but don't fail the signup
+        console.error("Failed to send staff signup notification email:", emailError);
+      }
+    }
 
     const token = generateToken(user);
     return res.status(201).json({ token, user: { id: user._id, username: user.username, email: user.email, role: user.role } });
