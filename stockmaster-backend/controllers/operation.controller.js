@@ -3,6 +3,32 @@ const Ledger = require("../models/ledger.model");
 const { updateStock } = require("../utils/stockUpdate");
 
 // ------------------------------
+// GET ALL OPERATIONS
+// ------------------------------
+exports.getOperations = async (req, res) => {
+  try {
+    const { type, status } = req.query;
+    
+    let query = {};
+    if (type) query.type = type;
+    if (status) query.status = status;
+
+    const operations = await Operation.find(query)
+      .populate('createdBy', 'username email')
+      .populate('validatedBy', 'username email')
+      .populate('lines.product', 'name sku')
+      .populate('lines.fromWarehouse', 'name code')
+      .populate('lines.toWarehouse', 'name code')
+      .sort({ createdAt: -1 });
+
+    return res.json(operations);
+  } catch (err) {
+    console.error("Get operations error:", err);
+    return res.status(500).json({ message: "Server error" });
+  }
+};
+
+// ------------------------------
 // CREATE RECEIPT
 // ------------------------------
 exports.createReceipt = async (req, res) => {
@@ -244,6 +270,8 @@ exports.createAdjustment = async (req, res) => {
       return res.status(400).json({ message: "Missing fields" });
     }
 
+    const qtyDiff = newQty - oldQty;
+
     const adjustment = await Operation.create({
       type: "adjustment",
       status: "pending",
@@ -251,9 +279,9 @@ exports.createAdjustment = async (req, res) => {
       lines: [
         {
           product,
-          qty: newQty - oldQty,
-          fromWarehouse: qty > 0 ? null : warehouse,
-          toWarehouse: qty > 0 ? warehouse : null
+          qty: qtyDiff,
+          fromWarehouse: qtyDiff < 0 ? warehouse : null,
+          toWarehouse: qtyDiff >= 0 ? warehouse : null
         }
       ]
     });

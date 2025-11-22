@@ -7,6 +7,11 @@ const warehouseAccess = require("../middleware/warehouseAccess.middleware");
 const operationController = require("../controllers/operation.controller");
 
 // ----------------------------------------------------
+// GET ALL OPERATIONS
+// ----------------------------------------------------
+router.get("/", auth, operationController.getOperations);
+
+// ----------------------------------------------------
 // RECEIPT ROUTES
 // ----------------------------------------------------
 
