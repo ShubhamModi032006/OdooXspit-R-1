@@ -16,6 +16,12 @@ app.use("/api/auth", authRoutes);
 const productRoutes = require("./routes/product.routes");
 app.use("/api/products", productRoutes);
 
+const warehouseRoutes = require("./routes/warehouse.routes");
+app.use("/api/warehouses", warehouseRoutes);
+
+const operationRoutes = require("./routes/operation.routes");
+app.use("/api/operations", operationRoutes);
+
 
 // Default route
 app.get("/", (req, res) => res.send("StockMaster Backend is Running"));
