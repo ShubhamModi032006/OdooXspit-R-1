@@ -6,8 +6,15 @@ const userSchema = new mongoose.Schema(
     email: { type: String, required: true, unique: true, lowercase: true },
     password: { type: String, required: true },
     role: { type: String, enum: ["manager", "staff"], default: "staff" },
-    otp: { type: String },
-    otpExpiry: { type: Date },
+
+    assignedWarehouse: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Warehouse",
+      default: null
+    },
+
+    otp: String,
+    otpExpiry: Date
   },
   { timestamps: true }
 );

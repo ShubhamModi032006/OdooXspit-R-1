@@ -3,32 +3,87 @@ const router = express.Router();
 
 const auth = require("../middleware/auth.middleware");
 const role = require("../middleware/role.middleware");
+const warehouseAccess = require("../middleware/warehouseAccess.middleware");
 const operationController = require("../controllers/operation.controller");
 
-// CREATE RECEIPT (staff & managers can create)
-router.post("/receipt", auth, operationController.createReceipt);
+// ----------------------------------------------------
+// RECEIPT ROUTES
+// ----------------------------------------------------
 
-// VALIDATE RECEIPT (manager only)
-router.patch("/receipt/:id/validate", auth, role("manager"), operationController.validateReceipt);
+// Staff & Manager can create receipt, BUT restricted to staff's warehouse
+router.post(
+  "/receipt",
+  auth,
+  warehouseAccess,        // restrict staff to their assigned warehouse
+  operationController.createReceipt
+);
 
-// CREATE DELIVERY (staff + manager)
-router.post("/delivery", auth, operationController.createDelivery);
+// Only manager can validate
+router.patch(
+  "/receipt/:id/validate",
+  auth,
+  role("manager"),
+  operationController.validateReceipt
+);
 
-// VALIDATE DELIVERY (manager only)
-router.patch("/delivery/:id/validate", auth, role("manager"), operationController.validateDelivery);
+// ----------------------------------------------------
+// DELIVERY ROUTES
+// ----------------------------------------------------
 
-// CREATE TRANSFER (staff + manager)
-router.post("/transfer", auth, operationController.createTransfer);
+// Staff & Manager create delivery
+router.post(
+  "/delivery",
+  auth,
+  warehouseAccess,        // staff can only deliver from their own warehouse
+  operationController.createDelivery
+);
 
-// VALIDATE TRANSFER (manager)
-router.patch("/transfer/:id/validate", auth, role("manager"), operationController.validateTransfer);
+// manager validates delivery
+router.patch(
+  "/delivery/:id/validate",
+  auth,
+  role("manager"),
+  operationController.validateDelivery
+);
 
-// CREATE ADJUSTMENT (staff + manager)
-router.post("/adjustment", auth, operationController.createAdjustment);
+// ----------------------------------------------------
+// TRANSFER ROUTES
+// ----------------------------------------------------
 
-// VALIDATE ADJUSTMENT (manager)
-router.patch("/adjustment/:id/validate", auth, role("manager"), operationController.validateAdjustment);
+// staff can only transfer FROM their warehouse
+router.post(
+  "/transfer",
+  auth,
+  warehouseAccess,        // ensures fromWarehouse belongs to staff
+  operationController.createTransfer
+);
 
+// only manager validate transfers
+router.patch(
+  "/transfer/:id/validate",
+  auth,
+  role("manager"),
+  operationController.validateTransfer
+);
 
+// ----------------------------------------------------
+// ADJUSTMENT ROUTES
+// ----------------------------------------------------
+
+// staff can create adjustment only for their assigned warehouse
+router.post(
+  "/adjustment",
+  auth,
+  warehouseAccess,        // ensures correct warehouse
+  operationController.createAdjustment
+);
+
+// only manager validate adjustment
+router.patch(
+  "/adjustment/:id/validate",
+  auth,
+  role("manager"),
+  operationController.validateAdjustment
+);
 
 module.exports = router;
