@@ -7,11 +7,25 @@ const { updateStock } = require("../utils/stockUpdate");
 // ------------------------------
 exports.getOperations = async (req, res) => {
   try {
-    const { type, status } = req.query;
+    const { type, status, warehouse } = req.query;
+    const mongoose = require("mongoose");
     
     let query = {};
     if (type) query.type = type;
-    if (status) query.status = status;
+    if (status) {
+      // Handle comma-separated status values
+      const statusArray = status.split(',').map(s => s.trim());
+      query.status = statusArray.length === 1 ? statusArray[0] : { $in: statusArray };
+    }
+
+    // Filter by warehouse if provided
+    if (warehouse) {
+      const warehouseId = new mongoose.Types.ObjectId(warehouse);
+      query.$or = [
+        { "lines.toWarehouse": warehouseId },
+        { "lines.fromWarehouse": warehouseId }
+      ];
+    }
 
     const operations = await Operation.find(query)
       .populate('createdBy', 'username email')
